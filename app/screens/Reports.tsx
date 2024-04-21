@@ -16,7 +16,7 @@ import { shortenNumber } from '../utils/number';
 import { ReportPage } from '../components/ReportPage';
 import { IExpenses } from '../types/expenses';
 import { collection, onSnapshot } from 'firebase/firestore';
-import { db } from '../firebaseConfig';
+import { auth, db } from '../firebaseConfig';
 
 type Props = {
   reportsSheetRef: MutableRefObject<BottomSheetMethods>;
@@ -67,30 +67,31 @@ export const Reports = ({ reportsSheetRef }: Props) => {
   const [expenses, setExpenses] = useState<IExpenses[]>([]);
   
   useEffect(() => {
-    const expenseRef = collection(db, "expenses");
+    const user = auth.currentUser;
+    if (user) {
+      const uid = user.uid;
+      const expenseRef = collection(db, `users/${uid}/expenses`); // Путь к коллекции расходов текущего пользователя
 
-    const subscriber = onSnapshot(expenseRef, {
-      next: (snapshot) => {
-         
-        const newExpense: IExpenses[] = [];
-        snapshot.docs.forEach((doc) => {
-          const data = doc.data();
-          const expense: IExpenses = {
-            id: data.id,
-            amount: data.amount,
-            date: data.date.toDate(),
-            category: data.category,
-            note: data.note,
-            
-            
-          };
-          newExpense.push(expense);
-        });
-        setExpenses(newExpense);
-      },
-    });
+      const subscriber = onSnapshot(expenseRef, {
+        next: (snapshot) => {
+          const newExpense: IExpenses[] = [];
+          snapshot.docs.forEach((doc) => {
+            const data = doc.data();
+            const expense: IExpenses = {
+              id: doc.id, // Используем id документа в качестве идентификатора расхода
+              amount: data.amount,
+              date: data.date.toDate(),
+              category: data.category,
+              note: data.note,
+            };
+            newExpense.push(expense);
+          });
+          setExpenses(newExpense);
+        },
+      });
 
-    return () => subscriber();
+      return () => subscriber();
+    }
   }, []);
 
   const listRef = useRef<FlatList>(null);

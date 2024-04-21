@@ -24,14 +24,15 @@ import { ColorPicker, fromHsv } from "react-native-color-picker";
 import { CategoryRow } from "../components/CategoryRow";
 import Swipeable from "react-native-gesture-handler/Swipeable";
 import EvilIcons from "@expo/vector-icons/EvilIcons";
-import { useDispatch, useSelector } from "react-redux";
+
 import {
-  addCategories,
-  removeCategories,
-  selectCategories,
-} from "../../store/slices/categorySlice";
-import { addDoc, collection, onSnapshot } from "firebase/firestore";
-import { db } from "../firebaseConfig";
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  onSnapshot,
+} from "firebase/firestore";
+import { auth, db } from "../firebaseConfig";
 type Category = {
   id: string;
   name: string;
@@ -43,15 +44,14 @@ export const Categories = () => {
   const [selectedColor, setSelectedColor] = useState(theme.colors.primary);
 
   const [name, setName] = useState("");
-  const dispatch = useDispatch();
+
   const [category, setCategory] = useState<Category[]>([]);
 
-  const removeHandleCategory = (categoryId: number) => {
-    dispatch(removeCategories({ id: categoryId }));
-  };
-
   useEffect(() => {
-    const categoryRef = collection(db, "categories");
+    const user = auth.currentUser;
+    if (user) {
+      const uid = user.uid;
+    const categoryRef = collection(db, `users/${uid}/categories`);
 
     const subscriber = onSnapshot(categoryRef, {
       next: (snapshot) => {
@@ -71,19 +71,40 @@ export const Categories = () => {
     });
 
     return () => subscriber();
+  }
   }, []);
 
   const addHandleCategory = async () => {
     if (name.length == 0) {
       return Alert.alert("Введите название категории!");
     }
+    const user = auth.currentUser;
+    if (!user) {
+      return Alert.alert("Пользователь не авторизован!");
+    }
+    const uid = user.uid;
     const newCategory = {
       id: Date.now().toString(),
       name: name,
       color: selectedColor,
     };
-    const doc = await addDoc(collection(db, "categories"), newCategory);
-    setName("");
+    try {
+      // Добавляем новую категорию в коллекцию категорий пользователя
+      await addDoc(collection(db, `users/${uid}/categories`), newCategory);
+      // Очищаем поле ввода после добавления категории
+      setName("");
+    } catch (error) {
+      console.error("Ошибка при добавлении категории: ", error);
+      Alert.alert("Произошла ошибка при добавлении категории!");
+    }
+  };
+
+  const deleteCategory = async (categoryId: string) => {
+    try {
+      await deleteDoc(doc(db, "categories", categoryId));
+    } catch (error) {
+      console.error("Error removing category: ", error);
+    }
   };
 
   const onSelectColor = (hex: string) => {
@@ -116,12 +137,12 @@ export const Categories = () => {
                           width: 75,
                         }}>
                         <RectButton
+                          onPress={() => deleteCategory(cat.id)}
                           style={{
                             flex: 1,
                             alignItems: "center",
                             justifyContent: "center",
-                          }}
-                          onPress={() => removeHandleCategory(cat.id)}>
+                          }}>
                           <EvilIcons name="trash" size={40} color="white" />
                         </RectButton>
                       </View>

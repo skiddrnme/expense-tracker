@@ -71,7 +71,7 @@ export const ExpenseList = ({ groups }: Props) => {
                 color: theme.colors.textSecondary,
                 fontWeight: "600",
               }}>
-              РУБ {total}
+              РУБ {total.toFixed(2)}
             </Text>
           </View>
         </View>

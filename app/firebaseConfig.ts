@@ -22,9 +22,9 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig);
 
-export const auth = getAuth();
+export const auth = getAuth(app);
 
 export const register = (email: string, password: string) =>
   createUserWithEmailAndPassword(auth, email, password);

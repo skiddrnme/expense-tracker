@@ -60,7 +60,7 @@ export const Scanning = ({navigation}) => {
       {hasScanned && (
         <Button title={"Tap to Scan Again"} onPress={() => setHasScanned(false)} />
       )}
-      <Text style={{ fontSize: 30 }}>{scannedText}</Text>
+      {/* <Text style={{ fontSize: 30 }}>{scannedText}</Text> */}
     </View>
   );
 };

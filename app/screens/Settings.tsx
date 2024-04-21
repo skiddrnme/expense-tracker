@@ -3,8 +3,14 @@ import { Alert, Text, View } from "react-native";
 import { ListItem } from "../components/ListItem";
 import { Entypo } from "@expo/vector-icons";
 import { theme } from "../theme";
+import { useAuth } from "../hooks/useAuth";
 
 export const Settings = ({ navigation }) => {
+  const { logout } = useAuth();
+  const handleLogOut = async () => {
+    await logout();
+  };
+
   return (
     <View
       style={{
@@ -42,8 +48,7 @@ export const Settings = ({ navigation }) => {
           Alert.alert("Вы уверены?", "Это действие нельзя отменить");
         }}
       />
-       <ListItem
-        
+      <ListItem
         label="Выйти"
         detail={
           <Entypo
@@ -54,7 +59,7 @@ export const Settings = ({ navigation }) => {
           />
         }
         onClick={() => {
-          navigation.navigate("Auth");
+          handleLogOut();
         }}
       />
     </View>

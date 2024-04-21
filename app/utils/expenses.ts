@@ -3,10 +3,7 @@ import { calculateRange } from "./date";
 import { Recurrence } from "../types/recurrence";
 import { ExpensesGroup } from "../types/expense-group";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  fetchExpenses,
-  selectExpenses,
-} from "../../store/slices/expensesSlice";
+import { ru } from "date-fns/locale";
 import { IExpenses } from "../types/expenses";
 import { useEffect, useState } from "react";
 import { collection, onSnapshot } from "firebase/firestore";
@@ -40,9 +37,9 @@ export const groupExpensesByDay = (expenses: IExpenses[]): ExpensesGroup[] => {
     } else if (isYesterday(date)) {
       key = "Вчера";
     } else if (isThisYear(date)) {
-      key = format(date, "E, d MMM");
+      key = format(date, "E, d MMM", { locale: ru });
     } else {
-      key = format(date, "E, d MMM yyyy");
+      key = format(date, "E, d MMM yyyy", { locale: ru });
     }
 
     if (!groupedExpenses[key]) {
@@ -51,10 +48,6 @@ export const groupExpensesByDay = (expenses: IExpenses[]): ExpensesGroup[] => {
 
     groupedExpenses[key].push(expense);
   });
-
-  // Добавим отладочный вывод
-  // console.log("Группировка расходов:");
-  // console.log(groupedExpenses);
 
   return Object.keys(groupedExpenses).map((key) => ({
     day: key,

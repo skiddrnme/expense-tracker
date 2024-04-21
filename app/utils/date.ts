@@ -1,15 +1,15 @@
 import { format, add, previousMonday, sub, nextSunday } from "date-fns";
-
+import { ru } from "date-fns/locale";
 import { Recurrence } from "../types/recurrence";
 
 export const formatDateRange = (start: Date, end: Date, period: Recurrence) => {
   switch (period) {
     case Recurrence.Weekly:
-      return format(start, "d MMM") + " - " + format(end, "d MMM");
+      return format(start, "d MMM", {locale: ru}) + " - " + format(end, "d MMM", {locale: ru});
     case Recurrence.Monthly:
-      return format(start, "MMMM");
+      return format(start, "MMMM", {locale: ru});
     case Recurrence.Yearly:
-      return format(start, "yyyy");
+      return format(start, "yyyy", {locale: ru});
   }
 
   return format(start, "d MMM") + " - " + format(end, "d MMM");

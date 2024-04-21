@@ -20,9 +20,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { theme } from "../theme";
 import { MaterialIcons } from "@expo/vector-icons";
 import { ExpenseList } from "../components/ExpenseList";
-import { useDispatch, useSelector } from "react-redux";
-import { addExpense } from "../../store/slices/expensesSlice";
-import { selectCategories } from "../../store/slices/categorySlice";
+
 import BottomSheet, {
   BottomSheetFlatList,
   BottomSheetView,
@@ -30,12 +28,13 @@ import BottomSheet, {
 import { Category } from "../types/category";
 import { Recurrence } from "../types/recurrence";
 import { addDoc, collection, onSnapshot } from "firebase/firestore";
-import { db } from "../firebaseConfig";
+import { auth, db } from "../firebaseConfig";
 import { Camera } from "expo-camera";
-import { CameraView, useCameraPermissions } from "expo-camera/next";
+import DatePicker from "react-native-datepicker";
 
 const Add = ({ navigation, route }) => {
   const [date, setDate] = useState(new Date());
+  const [showPicker, setShowPicker] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]); // Указываем тип данных Category[]
   const [sheetView, setSheetView] = React.useState<"recurrence" | "category">(
     "recurrence"
@@ -44,7 +43,7 @@ const Add = ({ navigation, route }) => {
   const [category, setCategory] = useState<Category>(categories[0]);
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
-  const dispatch = useDispatch();
+
   const bottomSheetRef = useRef<BottomSheet>(null);
   const keyboardRef = useRef(null);
   const snapPoints = useMemo(() => ["25%", "50%", "90%"], []);
@@ -80,28 +79,38 @@ const Add = ({ navigation, route }) => {
   }, [amountScan, dateScan]);
 
   useEffect(() => {
-    const categoryRef = collection(db, "categories");
+    // Получаем текущего пользователя
+    const user = auth.currentUser;
+    if (user) {
+      const uid = user.uid;
+      const categoryRef = collection(db, `users/${uid}/categories`);
 
-    const unsubscribe = onSnapshot(categoryRef, (snapshot) => {
-      const categoryData: Category[] = [];
-      snapshot.forEach((doc) => {
-        const { id, name, color } = doc.data();
-        categoryData.push({
-          id,
-          name,
-          color,
+      const unsubscribe = onSnapshot(categoryRef, (snapshot) => {
+        const categoryData: Category[] = [];
+        snapshot.forEach((doc) => {
+          const { id, name, color } = doc.data();
+          categoryData.push({
+            id,
+            name,
+            color,
+          });
         });
+        setCategories(categoryData);
       });
-      setCategories(categoryData);
-    });
 
-    return () => unsubscribe();
+      return () => unsubscribe();
+    }
   }, []);
 
   const addExpenseHandler = async () => {
     if (note.length == 0 || amount.length == 0) {
       return Alert.alert("Вы ничего не ввели!");
     }
+    const user = auth.currentUser;
+    if (!user) {
+      return Alert.alert("Пользователь не авторизован!");
+    }
+    const uid = user.uid;
     const newExpense = {
       id: Date.now().toString(),
       note,
@@ -109,11 +118,17 @@ const Add = ({ navigation, route }) => {
       category: category.name,
       date: date,
     };
-    const doc = await addDoc(collection(db, "expenses"), newExpense);
-    // dispatch(addExpense(newExpense))
-    setAmount("");
-    setNote("");
-    // Оставляем категорию такой, какой была перед добавлением расхода
+    try {
+      // Добавляем новый расход в коллекцию расходов пользователя
+      await addDoc(collection(db, `users/${uid}/expenses`), newExpense);
+      // Очищаем поля ввода после добавления расхода
+      setAmount("");
+      setNote("");
+      // Оставляем категорию такой, какой была перед добавлением расхода
+    } catch (error) {
+      console.error("Ошибка при добавлении расхода: ", error);
+      Alert.alert("Произошла ошибка при добавлении расхода!");
+    }
   };
 
   const selectCategory = (selectedCategory: Category) => {
@@ -125,6 +140,20 @@ const Add = ({ navigation, route }) => {
     bottomSheetRef.current?.close();
   };
 
+  const toggleShowPicker = () => {
+    setShowPicker(!showPicker);
+  };
+  const onChange = (event, newDate) => {
+    setDate(newDate);
+    if (Platform.OS == "android") {
+      toggleShowPicker();
+    }
+  };
+
+  const formatDate = (date) => {
+    const options = { year: "numeric", month: "long", day: "numeric" };
+    return date.toLocaleDateString("ru-RU", options);
+  };
   return (
     <>
       <KeyboardAvoidingView
@@ -160,57 +189,69 @@ const Add = ({ navigation, route }) => {
                     fontSize: 16,
                   }}
                   ref={keyboardRef}
+                  keyboardAppearance="dark"
                 />
               }
             />
-            {/* <ListItem
-              label="Повторение"
+
+            <ListItem
+              label="Дата"
               detail={
-                <TouchableOpacity
-                  style={{
-                    flex: 1,
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                  }}
-                  onPress={() => {
-                    setSheetView("recurrence");
-                    bottomSheetRef.current?.snapToIndex(1);
-                  }}>
+                <TouchableOpacity onPress={toggleShowPicker}>
                   <Text
                     style={{
                       color: theme.colors.primary,
-                      textTransform: "capitalize",
                       fontSize: 16,
+                      color: theme.colors.textPrimary,
                     }}>
-                    {recurrence}
+                    {date ? formatDate(date) : "Выберите дату"}
                   </Text>
                 </TouchableOpacity>
               }
-            /> */}
-            {Platform.OS === "ios" && (
-              <ListItem
-                label="Дата"
-                detail={
-                  <DateTimePicker
-                    value={date}
-                    mode="date"
-                    is24Hour={true}
-                    themeVariant="dark"
-                    maximumDate={new Date()}
-                    minimumDate={
-                      new Date(
-                        new Date().getFullYear() - 1,
-                        new Date().getMonth(),
-                        new Date().getDate()
-                      )
-                    }
-                    onChange={(event, newDate) => setDate(newDate)}
-                    locale={Platform.OS === "ios" ? "ru_RU" : "en_US"}
-                  />
+            />
+            {showPicker && (
+              <DateTimePicker
+                value={date}
+                display="spinner"
+                mode={"date"}
+                is24Hour={true}
+                themeVariant="dark"
+                maximumDate={new Date()}
+                minimumDate={
+                  new Date(
+                    new Date().getFullYear() - 1,
+                    new Date().getMonth(),
+                    new Date().getDate()
+                  )
                 }
+                onChange={onChange}
+                locale={"ru_RU"}
+                
               />
             )}
+            {showPicker && Platform.OS === "ios" && (
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-around",
+                }}>
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: theme.colors.primary,
+                    paddingHorizontal: 20,
+                    paddingVertical: 13,
+                    borderRadius: 10,
+                    marginTop: 32,
+                    marginBottom: 20,
+                  }}
+                  onPress={toggleShowPicker}>
+                  <Text style={{ color: theme.colors.textPrimary }}>
+                    Добавить
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
             <ListItem
               label="Запись"
               detail={
@@ -227,6 +268,7 @@ const Add = ({ navigation, route }) => {
                     paddingLeft: 8,
                     fontSize: 16,
                   }}
+                  keyboardAppearance="dark"
                 />
               }
             />
@@ -324,6 +366,7 @@ const Add = ({ navigation, route }) => {
         )}
         {sheetView === "category" && (
           <BottomSheetFlatList
+            style={{ backgroundColor: theme.colors.card }}
             data={categories}
             keyExtractor={(item) => item.id.toString()}
             renderItem={({ item }) => (
@@ -344,7 +387,7 @@ const Add = ({ navigation, route }) => {
                     marginRight: 12,
                   }}
                 />
-                <Text style={{ color: "#000", fontSize: 18, marginLeft: 12 }}>
+                <Text style={{ color: "#FFF", fontSize: 18, marginLeft: 12 }}>
                   {item ? item.name : "Нет категории"}
                 </Text>
               </TouchableOpacity>

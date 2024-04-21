@@ -23,11 +23,11 @@ type Props = {
         total: 0,
       },
       {
-        month: 'February',
+        month: 'Февраль',
         total: 0,
       },
       {
-        month: 'March',
+        month: 'Март',
         total: 0,
       },
       {
@@ -35,35 +35,35 @@ type Props = {
         total: 0,
       },
       {
-        month: 'May',
+        month: 'Май',
         total: 0,
       },
       {
-        month: 'June',
+        month: 'Июнь',
         total: 0,
       },
       {
-        month: 'July',
+        month: 'Июль',
         total: 0,
       },
       {
-        month: 'August',
+        month: 'Август',
         total: 0,
       },
       {
-        month: 'September',
+        month: 'Сентябрь',
         total: 0,
       },
       {
-        month: 'October',
+        month: 'Октябрь',
         total: 0,
       },
       {
-        month: 'November',
+        month: 'Ноябрь',
         total: 0,
       },
       {
-        month: 'December',
+        month: 'Декабрь',
         total: 0,
       },
     ];

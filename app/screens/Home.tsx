@@ -27,17 +27,17 @@ export const Home = ({ navigation }) => {
         headerTitleStyle: {
           fontSize: 30,
         },
-        headerRight: () => (
-          <TouchableOpacity
-            style={{
-              marginRight: 15, // Add right margin
-              alignItems: "center", // Center horizontally
-              justifyContent: "center",
-            }}
-            onPress={() => navigation.navigate("Профиль")}>
-            <Text style={{ color: "#fff" }}>Аватар</Text>
-          </TouchableOpacity>
-        ),
+        // headerRight: () => (
+        //   <TouchableOpacity
+        //     style={{
+        //       marginRight: 15, // Add right margin
+        //       alignItems: "center", // Center horizontally
+        //       justifyContent: "center",
+        //     }}
+        //     onPress={() => navigation.navigate("Профиль")}>
+        //     <Text style={{ color: "#fff" }}>Аватар</Text>
+        //   </TouchableOpacity>
+        // ),
       }}>
       <Tab.Screen
         options={{
@@ -69,12 +69,4 @@ export const Home = ({ navigation }) => {
       />
     </Tab.Navigator>
   );
-};
-
-const styles = {
-  avatarButton: {
-    marginRight: 15, // Add right margin
-    alignItems: "center", // Center horizontally
-    justifyContent: "center",
-  },
 };

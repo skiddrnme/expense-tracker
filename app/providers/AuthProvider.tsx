@@ -1,10 +1,10 @@
-import React, { createContext, useEffect, useMemo, useState } from "react";
+import React, { FC, createContext, useEffect, useMemo, useState, ReactNode } from "react";
 import { View, Text, Alert } from "react-native";
 import { User, onAuthStateChanged } from "firebase/auth";
 import { auth, db, login, logout, register } from "../firebaseConfig";
 import { addDoc, collection } from "firebase/firestore";
 interface IContext {
-  user: User | null;
+  user: User ;
   isLoading: boolean;
   register: (email: string, password: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
@@ -13,8 +13,8 @@ interface IContext {
 
 export const AuthContext = createContext<IContext>({} as IContext);
 
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+export const AuthProvider:FC<{ children: ReactNode }> = ({children}) => {
+  const [user, setUser] = useState<User >(null);
   const [isLoadingInitial, setIsLoadingInitial] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -22,7 +22,7 @@ export const AuthProvider = ({ children }) => {
     setIsLoading(true);
     try {
       const { user } = await register(email, password);
-      await addDoc(collection(db, "users"), {
+      const doc = await addDoc(collection(db, "users"), {
         _id: user.uid,
         displayName: "No name",
       });
@@ -55,14 +55,14 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  useEffect(
-    () =>
-      onAuthStateChanged(auth, (user) => {
-        setUser(user || null);
-        setIsLoadingInitial(false);
-      }),
-    []
-  );
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user || null);
+      setIsLoadingInitial(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const value = useMemo(
     () => ({

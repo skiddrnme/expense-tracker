@@ -17,10 +17,7 @@ import BottomSheet, {
 import * as Sentry from "sentry-expo";
 import { theme } from "../theme";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  fetchExpenses,
-  selectExpenses,
-} from "../../store/slices/expensesSlice";
+
 import { ExpenseList } from "../components/ExpenseList";
 import { getPlainRecurrence } from "../utils/recurrenses";
 import {
@@ -28,7 +25,7 @@ import {
   getAverageAmountInPeriod,
 } from "../utils/expenses"; // обновлен импорт
 import { collection, onSnapshot } from "firebase/firestore";
-import { db } from "../firebaseConfig";
+import { db, auth } from "../firebaseConfig";
 import { IExpenses } from "../types/expenses";
 const Expenses = () => {
   const [expenses, setExpenses] = useState<IExpenses[]>([]);
@@ -44,27 +41,31 @@ const Expenses = () => {
   };
   console.log(expenses);
   useEffect(() => {
-    const expenseRef = collection(db, "expenses");
+    const user = auth.currentUser;
+    if (user) {
+      const uid = user.uid;
+      const expenseRef = collection(db, `users/${uid}/expenses`);
 
-    const subscriber = onSnapshot(expenseRef, {
-      next: (snapshot) => {
-        const newExpense: IExpenses[] = [];
-        snapshot.docs.forEach((doc) => {
-          const data = doc.data();
-          const expense: IExpenses = {
-            id: data.id,
-            amount: data.amount,
-            date: data.date.toDate(),
-            category: data.category,
-            note: data.note,
-          };
-          newExpense.push(expense);
-        });
-        setExpenses(newExpense);
-      },
-    });
+      const subscriber = onSnapshot(expenseRef, {
+        next: (snapshot) => {
+          const newExpense: IExpenses[] = [];
+          snapshot.docs.forEach((doc) => {
+            const data = doc.data();
+            const expense: IExpenses = {
+              id: data.id,
+              amount: data.amount,
+              date: data.date.toDate(),
+              category: data.category,
+              note: data.note,
+            };
+            newExpense.push(expense);
+          });
+          setExpenses(newExpense);
+        },
+      });
 
-    return () => subscriber();
+      return () => subscriber();
+    }
   }, []);
 
   return (
@@ -156,7 +157,7 @@ const Expenses = () => {
                   textTransform: "capitalize",
                   color: recurrence === item ? theme.colors.primary : "white",
                 }}>
-                This {getPlainRecurrence(item)}
+                {getPlainRecurrence(item)}
               </Text>
             </TouchableHighlight>
           )}
